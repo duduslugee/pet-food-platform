@@ -1,0 +1,28 @@
+
+##### **.gitignore**:
+```gitignore
+# Java/Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+.idea/
+*.iml
+.mvn/
+mvnw
+mvnw.cmd
+
+# Node.js/React
+node_modules/
+build/
+.env
+
+# Docker
+*.log
+
+# Arquivos temporários
+*.swp
+*.swo
+*~
+.DS_Store

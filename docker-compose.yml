@@ -1,0 +1,145 @@
+version: '3.8'
+services:
+  catalog-db:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - catalog_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  user-db:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - user_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  order-db:
+    image: mongo:latest
+    ports:
+      - "27019:27017"
+    volumes:
+      - order_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  payment-db:
+    image: mongo:latest
+    ports:
+      - "27020:27017"
+    volumes:
+      - payment_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  catalog-service:
+    build:
+      context: ./catalog-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://catalog-db:27017/catalogdb
+    networks:
+      - app-network
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      user-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://user-db:27017/userdb
+    networks:
+      - app-network
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      order-db:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://order-db:27017/orderdb
+    networks:
+      - app-network
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://payment-db:27017/paymentdb
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - catalog-service
+      - user-service
+      - order-service
+      - payment-service
+    networks:
+      - app-network
+
+volumes:
+  catalog_data:
+  user_data:
+  order_data:
+  payment_data:
+
+networks:
+  app-network:
+    driver: bridge
