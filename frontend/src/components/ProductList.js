@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-toastify';
 import { FaDog, FaPlus } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import './ProductList.css';
 
-const ProductList = () => {
+const ProductList = ({ cart, setCart }) => {
   const [products, setProducts] = useState([]);
   const [newProduct, setNewProduct] = useState({
     id: '',
@@ -17,21 +16,22 @@ const ProductList = () => {
     available: true,
   });
   const [showForm, setShowForm] = useState(false);
+  const navigate = useNavigate();
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:8081/products');
+      if (!response.ok) throw new Error('Falha ao carregar produtos');
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      toast.error('Erro ao carregar produtos: ' + error.message, { toastId: 'fetch-error', autoClose: 3000 });
+    }
+  }, []);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const response = await axios.get('http://localhost:8081/products');
-      setProducts(response.data);
-      toast.success('Produtos carregados com sucesso!', { position: 'top-right' });
-    } catch (error) {
-      console.error('Erro ao buscar produtos:', error);
-      toast.error('Erro ao carregar produtos: ' + (error.response?.data || error.message), { position: 'top-right' });
-    }
-  };
+  }, [fetchProducts]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -46,10 +46,13 @@ const ProductList = () => {
   const addProduct = async (e) => {
     e.preventDefault();
     try {
-      console.log('Enviando produto:', newProduct);
-      const response = await axios.post('http://localhost:8081/products', newProduct);
-      console.log('Resposta do servidor:', response.data);
-      toast.success('Produto adicionado com sucesso!', { position: 'top-right' });
+      const response = await fetch('http://localhost:8081/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProduct),
+      });
+      if (!response.ok) throw new Error('Falha ao adicionar produto');
+      toast.success('Produto adicionado com sucesso!', { toastId: 'add-product-success', autoClose: 3000 });
       setShowForm(false);
       setNewProduct({
         id: '',
@@ -62,10 +65,13 @@ const ProductList = () => {
       });
       fetchProducts();
     } catch (error) {
-      console.error('Erro ao adicionar produto:', error);
-      const errorMessage = error.response?.data || error.message;
-      toast.error('Erro ao adicionar produto: ' + errorMessage, { position: 'top-right' });
+      toast.error('Erro ao adicionar produto: ' + error.message, { toastId: 'add-product-error', autoClose: 3000 });
     }
+  };
+
+  const addToCart = (product) => {
+    setCart([...cart, product]);
+    toast.success(`${product.name} adicionado ao carrinho!`, { toastId: `add-to-cart-${product.id}`, autoClose: 3000 });
   };
 
   return (
@@ -77,65 +83,15 @@ const ProductList = () => {
 
       {showForm && (
         <form className="product-form" onSubmit={addProduct}>
-          <input
-            type="text"
-            name="id"
-            placeholder="ID do Produto"
-            value={newProduct.id}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="text"
-            name="name"
-            placeholder="Nome do Produto"
-            value={newProduct.name}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="text"
-            name="type"
-            placeholder="Tipo (ex.: Cachorro)"
-            value={newProduct.type}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="text"
-            name="description"
-            placeholder="Descrição"
-            value={newProduct.description}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="number"
-            name="weight"
-            placeholder="Peso (kg)"
-            value={newProduct.weight}
-            onChange={handleInputChange}
-            required
-            min="0"
-          />
-          <input
-            type="number"
-            name="price"
-            placeholder="Preço (R$)"
-            value={newProduct.price}
-            onChange={handleInputChange}
-            required
-            min="0"
-            step="0.01"
-          />
+          <input type="text" name="id" placeholder="ID do Produto" value={newProduct.id} onChange={handleInputChange} required />
+          <input type="text" name="name" placeholder="Nome do Produto" value={newProduct.name} onChange={handleInputChange} required />
+          <input type="text" name="type" placeholder="Tipo (ex.: Cachorro)" value={newProduct.type} onChange={handleInputChange} required />
+          <input type="text" name="description" placeholder="Descrição" value={newProduct.description} onChange={handleInputChange} required />
+          <input type="number" name="weight" placeholder="Peso (kg)" value={newProduct.weight} onChange={handleInputChange} required min="0" />
+          <input type="number" name="price" placeholder="Preço (R$)" value={newProduct.price} onChange={handleInputChange} required min="0" step="0.01" />
           <label>
             Disponível:
-            <input
-              type="checkbox"
-              name="available"
-              checked={newProduct.available}
-              onChange={handleCheckboxChange}
-            />
+            <input type="checkbox" name="available" checked={newProduct.available} onChange={handleCheckboxChange} />
           </label>
           <button type="submit">Salvar Produto</button>
         </form>
@@ -148,17 +104,16 @@ const ProductList = () => {
               <FaDog className="product-icon" />
               <h3>{product.name}</h3>
               <p>Tipo: {product.type}</p>
-              <p>Descrição: {product.description}</p>
-              <p>Peso: {product.weight} kg</p>
               <p>Preço: R$ {product.price.toFixed(2)}</p>
               <p>Disponível: {product.available ? 'Sim' : 'Não'}</p>
+              <button onClick={() => navigate(`/product/${product.id}`)}>Detalhes</button>
+              <button onClick={() => addToCart(product)} disabled={!product.available}>Adicionar ao Carrinho</button>
             </div>
           ))
         ) : (
           <p>Nenhum produto encontrado.</p>
         )}
       </div>
-      <ToastContainer />
     </div>
   );
 };

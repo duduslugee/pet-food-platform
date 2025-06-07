@@ -70,7 +70,7 @@ services:
       catalog-db:
         condition: service_healthy
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://catalog-db:27017/catalogdb
+      - SPRING_DATA_MONGODB_URI=mongodb://catalog-db:27017/catalogdb
     networks:
       - app-network
 
@@ -84,7 +84,7 @@ services:
       user-db:
         condition: service_healthy
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://user-db:27017/userdb
+      - SPRING_DATA_MONGODB_URI=mongodb://user-db:27017/userdb
     networks:
       - app-network
 
@@ -102,7 +102,7 @@ services:
       payment-service:
         condition: service_started
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://order-db:27017/orderdb
+      - SPRING_DATA_MONGODB_URI=mongodb://order-db:27017/orderdb
     networks:
       - app-network
 
@@ -116,7 +116,7 @@ services:
       payment-db:
         condition: service_healthy
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://payment-db:27017/paymentdb
+      - SPRING_DATA_MONGODB_URI=mongodb://payment-db:27017/paymentdb
     networks:
       - app-network
 
@@ -127,12 +127,21 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - catalog-service
-      - user-service
-      - order-service
-      - payment-service
+      catalog-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   catalog_data:

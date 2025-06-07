@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify'; // Remover ToastContainer
 import { useNavigate } from 'react-router-dom';
+import './Login.css';
 
-function Login({ setUser }) {
+const Login = ({ setUser }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const response = await fetch('http://localhost:8082/users/login', {
@@ -14,40 +16,26 @@ function Login({ setUser }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      if (response.ok) {
-        const user = await response.json();
-        setUser(user);
-        navigate('/');
-      } else {
-        alert('Credenciais inválidas');
-      }
+      if (!response.ok) throw new Error('Credenciais inválidas');
+      const data = await response.json();
+      setUser(data);
+      toast.success('Login bem-sucedido!', { position: 'top-right' });
+      navigate('/');
     } catch (error) {
-      alert('Erro ao fazer login');
+      toast.error('Erro ao fazer login: ' + error.message, { position: 'top-right' });
     }
   };
 
   return (
-    <div>
+    <div className="login-container">
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+      <form onSubmit={handleLogin}>
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button type="submit">Entrar</button>
       </form>
     </div>
   );
-}
+};
 
 export default Login;
