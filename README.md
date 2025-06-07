@@ -126,6 +126,7 @@ Cada microserviço inclui suporte ao Swagger/OpenAPI para documentação dos end
 
 Estrutura do Projeto
 --------------------
+```batch
 pet-food-platform/
 ├── catalog-service/    # Microserviço para gerenciar produtos
 │   ├── src/main/java/com/petfood/catalogservice/
@@ -179,6 +180,8 @@ pet-food-platform/
 │   └── .dockerignore
 ├── docker-compose.yml  # Configuração do Docker Compose
 └── README.txt          # Documentação do projeto
+```
+
 
 Serviços Docker
 ---------------
